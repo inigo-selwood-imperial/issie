@@ -40,8 +40,6 @@ type Segment =
         Draggable : bool
     }
 
-
-
 ///
 type Wire =
     {
@@ -54,8 +52,6 @@ type Wire =
     }
 
     with static member stickLength = 16.0
-
-
 
 ///
 type Model =
@@ -91,6 +87,8 @@ type Msg =
     | LoadConnections of list<Connection> // For Issie Integration
 
 //-------------------------Debugging functions---------------------------------//
+
+/// Converts a segment ID to a 3-letter string
 let ppSId (sId:SegmentId) =
     sId
     |> (fun (SegmentId x) -> x)
@@ -99,9 +97,11 @@ let ppSId (sId:SegmentId) =
     |> List.map string
     |> String.concat ""
 
+/// Prints a segment's index & ID 
 let ppS (seg:Segment) =
     sprintf $"|{seg.Index}:{ppSId seg.Id}|"
 
+/// Converts a connection ID to a string value
 let ppWId (wId:ConnectionId) =
         wId
         |> (fun (ConnectionId x) -> x)
@@ -110,9 +110,12 @@ let ppWId (wId:ConnectionId) =
         |> List.map string
         |> String.concat ""
 
+/// Prints the horizontal and vertical segments, and jumps, of a model
 let ppMaps (model:Model) =
     let mhv = model.FromHorizontalToVerticalSegmentIntersections
     let mvh = model.FromVerticalToHorizontalSegmentIntersections
+
+    // Concatenates horizontal, vertical segments into a semi-colon seperated string
     let m1 =
         mhv
         |> Map.toList
@@ -135,8 +138,8 @@ let ppMaps (model:Model) =
             
     printfn $"\n------------------\nMapHV:\n {m1} \n MapVH\n{m2} \nJumps:\n {jumps}\n------------------\n"
 
-
-
+/// Prints a model's segment in the following format:
+/// ID: startXY -> endXY - (V|H) - index
 let ppSeg seg (model: Model) = 
         let cid,sid = seg
         let wire = model.WX[cid]
@@ -144,6 +147,7 @@ let ppSeg seg (model: Model) =
         let pxy (xy: XYPos) = sprintf $"{(xy.X,xy.Y)}"
         sprintf $"""[{ppSId sg.Id}: {pxy sg.Start}->{pxy sg.End}]-{match sg.Dir with | Vertical -> "V" | _ -> "H"}-{sg.Index}"""
 
+/// Prints a list of segments in the context of a model
 let pp segs (model: Model)= 
     segs
     |> List.map  ( fun seg ->
@@ -163,7 +167,6 @@ let segmentsToVertices (segList:Segment list) =
     let firstCoord = (segList[0].Start.X, segList[0].Start.Y)
     let verticesExceptFirst = List.mapi (fun i seg -> (seg.End.X,seg.End.Y)) segList
     [firstCoord] @ verticesExceptFirst
-
 
 /// Given the coordinates of two port locations that correspond
 /// to the endpoints of a wire, this function returns a list of
@@ -303,9 +306,7 @@ let issieVerticesToSegments
             // can't work out what vertices are, so default to auto-routing
             printfn "Converting unknown"
             makeSegmentsFromVertices xyVerticesList
-            
 
-    
 //----------------------interface to Issie-----------------------//
 /// This function is given a ConnectionId and it
 /// converts the corresponding BusWire.Wire type to a
@@ -395,8 +396,6 @@ let segmentIntersectsSegment ((p1, q1) : (XYPos * XYPos)) ((p2, q2) : (XYPos * X
         then true
     else false
 
-
-
 ///Returns a segment with positive Start and End coordinates
 let makeSegPos (seg : Segment) =
     {seg with
@@ -408,7 +407,6 @@ let makeSegPos (seg : Segment) =
 let distanceBetweenTwoPoints (pos1 : XYPos) (pos2 : XYPos) : float =
     sqrt ( (pos1.X - pos2.X)*(pos1.X - pos2.X) + (pos1.Y - pos2.Y)*(pos1.Y - pos2.Y) )
 
-
 /// Given the coordinates of two port locations that correspond
 /// to the endpoints of a wire, this function returns a list of
 /// Segment(s).
@@ -416,7 +414,6 @@ let makeInitialSegmentsList (hostId : ConnectionId) (portCoords : XYPos * XYPos)
     let xyPairs, isLeftToRight = makeInitialWireVerticesList portCoords
     xyPairs
     |> xyVerticesToSegments hostId isLeftToRight
-
 
 /// This function renders the given
 /// segment (i.e. creates a ReactElement
@@ -556,7 +553,6 @@ type WireRenderProps =
         OutputPortLocation: XYPos
     }
 
-
 // ------------------------------redundant wire memoisation code------------------------------
 // this code is not used because React (via Function.Of) does this caching anyway - better tha it can be
 // done here
@@ -669,8 +665,6 @@ let view (model : Model) (dispatch : Dispatch<Msg>) =
     g [] [(g [] wires); symbols]
     |> TimeHelpers.instrumentInterval "WireView" start
 
-
-
 /// This function is given two couples of
 /// points that define two line segments and it returns:
 /// - Some (x, y) if the two segments intersect;
@@ -782,7 +776,6 @@ let getIntersectingSegments (model:Model) (wireId:ConnectionId) (selectBox:Bound
     model.WX[wireId].Segments
     |> List.filter (fun seg -> fst(segmentIntersectsBoundingBoxCoordinates seg selectBox))
 
-
 //Finds the closest segment in a wire to a point using euclidean distance
 let getClosestSegment (model : Model) (wireId : ConnectionId) (pos : XYPos) : Segment =
     model.WX[wireId].Segments
@@ -836,7 +829,6 @@ let changeLengths isAtEnd seg0 seg1 =
         // the case where we need to shorten the first or last segment (seg0 here)
         moveXJoinPos (if isAtEnd then seg1.End.X - Wire.stickLength else seg0.Start.X + Wire.stickLength) seg0 seg1
     else [ seg0; seg1]
-       
 
 /// Called for segments 1, 2, 3, 4, 5 - if they are vertical and move horizontally.
 /// The function returns distance reduced if need be to prevent wires moving into components
@@ -865,8 +857,7 @@ let getSafeDistanceForMove (seg: Segment) (seg0:Segment) (seg6:Segment) (distanc
         
     | _ -> 
         distance
-
-        
+     
 /// Adjust wire so that two adjacent horizontal segments that are in opposite directions
 /// get eliminated
 let removeRedundantSegments  (segs: Segment list) =
@@ -890,7 +881,6 @@ let removeRedundantSegments  (segs: Segment list) =
             [seg1;seg2]
     adjust segs[0] segs[1] @  segs[2..4] @ adjust segs[5] segs[6]
        
-
 /// This function allows a wire segment to be moved a given amount in a direction perpedicular to
 /// its orientation (Horizontal or Vertical). Used to manually adjust routing by mouse drag.
 /// The moved segment is tagged by negating one of its coordinates so that it cannot be auto-routed
@@ -1027,14 +1017,11 @@ let revSegments (segs:Segment list) =
 //
 // ======================================================================================================================
 
-
 let inline addPosPos (pos1: XYPos) (pos:XYPos) =
     {X = pos1.X + pos.X; Y = pos1.Y + pos.Y}
 
-
 let inline moveEnd (mover: XYPos -> XYPos) (n:int) =
     List.mapi (fun i (seg:Segment) -> if i = n then {seg with End = mover seg.End} else seg)
-
 
 let inline moveStart (mover: XYPos -> XYPos) (n:int) =
     List.mapi (fun i (seg:Segment) -> if i = n then {seg with Start = mover seg.Start} else seg)
@@ -1104,7 +1091,6 @@ let partialAutoRoute (segs: Segment list) (newPortPos: XYPos) =
     lastAutoIndex
     |> Option.bind checkTopology
     |> Option.bind scaleBeforeSegmentEnd
-
 
 ///Returns the new positions keeping manual coordinates negative, and auto coordinates positive
 let negXYPos (pos : XYPos) (diff : XYPos) : XYPos =
@@ -1198,27 +1184,17 @@ let makeAllJumps (wiresWithNoJumps: ConnectionId list) (model: Model) =
 
     { model with WX = newWX }
 
-
 let updateWireSegmentJumps (wireList: list<ConnectionId>) (wModel: Model) : Model =
     let startT = TimeHelpers.getTimeMs()
     let model = makeAllJumps [] wModel
     TimeHelpers.instrumentTime "UpdateJumps" startT
     model
 
-
-
 /// This function updates the wire model by removing from the stored lists of intersections
 /// all those generated by wireList wires.
 /// intersetcions are stored in maps on the model and on the horizontal segments containing the jumps
 let resetWireSegmentJumps (wireList : list<ConnectionId>) (wModel : Model) : Model =
     makeAllJumps wireList wModel
-
-
-
-   
-        
-
-
 
 /// Re-routes the wires in the model based on a list of components that have been altered.
 /// If the wire input and output ports are both in the list of moved components, does not re-route wire but instead translates it.
